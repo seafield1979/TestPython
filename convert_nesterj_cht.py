@@ -8,6 +8,7 @@
 # 	0x0034	4	アドレス
 # 	0x0038	4	値
 # 	0x003C	4	実行コード
+#   0x0040  4   サブコード数
 # 	0x0044	1	0:無効, 1:有効
 # 	0x0045	1	数値(0:10進,1:16進)
 # 	0x0046	1	サイズ(1:1Byte, 2:2Byte, 3:3Byte, 4:4Byte)
@@ -20,82 +21,102 @@ import os
 class CHT:
     def __init__(self):
         self.comment = ""
-        self.addr = 0
-        self.value = 0
-        self.code = 0
-        self.enable = False
-        self.value_type = 1
-        self.size = 1
+        self.addr = 0       # アドレス
+        self.value = 0      # 値
+        self.code = 0       # 実行コード(WT,ADDなど MESENではWT以外対応していないためWT以外ならそのコードをスキップする)
+        self.subcode_num = 0    # サブコード数
+        self.enable = False # Enabled
+        self.value_type = 1 # 数値(0:10進, 1:16進)
+        self.size = 1       # サイズ(Byte)
 
     def write_to_bin(self, fw):
         fw.write(int.from_bytes(self.value, 'little', signed=False))
 
     def read_from_cht(self, fr, file_addr):
-        # 0x00 comment
+        # comment
         fr.seek(file_addr)
         bin_comment = fr.read(32)
         self.comment = bin_comment.decode(encoding='sjis')
         self.comment = self.comment.replace('\x00','')
 
-        # 0x24 addr
+        # addr
         fr.seek(file_addr + 0x24)
         bin_addr = fr.read(4)
         self.addr = int.from_bytes(bin_addr, 'little', signed=False)
         
+        # value
         fr.seek(file_addr + 0x28)
         bin_value = fr.read(4)
         self.value = int.from_bytes(bin_value, 'little', signed=False)
         
+        # code
         fr.seek(file_addr + 0x2C)
         bin_code = fr.read(4)
         self.code = int.from_bytes(bin_code, 'little', signed=False)
 
+        # subcode_num
+        fr.seek(file_addr + 0x30)
+        bin_subcode = fr.read(4)
+        self.subcode_num = int.from_bytes(bin_subcode, 'little', signed=False)
+
+        # enable
         fr.seek(file_addr + 0x34)
         bin_enable = fr.read(1)
         self.enable = int.from_bytes(bin_enable, 'little', signed=False) == 1
 
+        # value_type
         fr.seek(file_addr + 0x35)
         bin_value_type = fr.read(1)
         self.value_type = int.from_bytes(bin_value_type, 'little', signed=False)
 
+        # size
         fr.seek(file_addr + 0x36)
         bin_size = fr.read(1)
         self.size = int.from_bytes(bin_size, 'little', signed=False)
 
-    def output_json(self, code_json):
-        output = {}
-        for i in range(self.size):
-            output['Description'] = self.comment.encode('unicode-escape').decode('utf-8')
-            if self.size > 1:
-                output['Description'] += "-" + str(i+1)
-            output['Type'] = 'NesCustom'
-            output['Enabled'] = False # self.enable
-            value1 = self.value >> (8 * i) & 0xff
-            output['Codes'] = "{:04X}:{:02X}".format(self.addr + i, value1 )
-            code_json.append(copy.copy(output))
+        if self.code == 0 and self.addr <= 0xffff:
+            return (True, 55)
+        else:
+            return (False, (1+self.subcode_num) * 55)
         
 
-def main(file_path):
-    print('main')
+    def output_json(self, code_json):
+        output = {}
+        output['Description'] = self.comment.encode('unicode-escape').decode('utf-8')
+        output['Type'] = 'NesCustom'
+        output['Enabled'] = False # self.enable
+        code_str = ""
+        for i in range(self.size):
+            if i > 0:
+                code_str += '\\r\\n'
+            value1 = self.value >> (8 * i) & 0xff
+            code_str += "{:04X}:{:02X}".format(self.addr + i, value1 )
+        output['Codes'] = code_str
+        code_json.append(copy.copy(output))
+
+def convert_cht_file(file_path):
+    root_ext_pair = os.path.splitext(file_path)
+    if len(root_ext_pair) >= 2:
+        if root_ext_pair[1] != '.cht':
+            print("file extension isn't 'cht'")
+            return
+
+    print('file_path:' + file_path)
     with open(file_path, 'rb') as fr:
         # ヘッダー部分
         fr.seek(4)
         code_num = int.from_bytes(fr.read(4), 'little', signed=False)
         
-        print(f"code_num: {code_num}")
-        #print(int.from_bytes(number_bin, 'little', signed=False))
-        
         # コード部
         code_list = []
         addr = 16
         for i in range(code_num):
-            print(i)
             code = CHT()
-            code.read_from_cht(fr, addr)
-            code_list.append(copy.copy(code))
-            addr += 55
-        print("end")
-
+            ret = code.read_from_cht(fr, addr)
+            if ret[0] == True:
+                code_list.append(copy.copy(code))
+            addr += ret[1]
+        
         # json用のデータを作成
         code_json = []
         for code in code_list:
@@ -116,6 +137,6 @@ def main(file_path):
             with open(file_output, 'w') as fw:
                 fw.write(output)
 
-
-main('./resource/nesterj_cheat.cht')
-print('complete')
+if __name__ == "__main__": 
+    convert_cht_file('./resource/nesterj_cheat.cht')
+    print('complete')
