@@ -17,6 +17,7 @@ import re
 import sys
 import json
 import os
+import traceback
 
 class CHT:
     def __init__(self):
@@ -36,7 +37,19 @@ class CHT:
         # comment
         fr.seek(file_addr)
         bin_comment = fr.read(32)
-        self.comment = bin_comment.decode(encoding='sjis')
+
+        # bin_commentの\x00 以降に\x00以外が入るとデコードエラーになるため除去する
+        flag1 = False
+        bin_comment2 = bytearray()
+        for b in bin_comment:
+            if b == 0:
+                if flag1 == False:
+                    flag1 = True
+                else:
+                    break
+            bin_comment2.append(b)
+
+        self.comment = bin_comment2.decode(encoding='sjis')
         self.comment = self.comment.replace('\x00','')
 
         # addr
@@ -101,7 +114,6 @@ def convert_cht_file(file_path):
             print("file extension isn't 'cht'")
             return
 
-    print('file_path:' + file_path)
     with open(file_path, 'rb') as fr:
         # ヘッダー部分
         fr.seek(4)
@@ -138,5 +150,13 @@ def convert_cht_file(file_path):
                 fw.write(output)
 
 if __name__ == "__main__": 
-    convert_cht_file('./resource/nesterj_cheat.cht')
+    try:
+        convert_cht_file('./nesterj_cht/うしおととら 深淵の大妖.cht')
+    # except UnicodeDecodeError as e :
+    #     print('Unicodeに出コードできませんでした:')
+        
+    except Exception as e:
+        t, v, tb = sys.exc_info()
+        print(traceback.format_exception(t,v,tb))
+        print(traceback.format_tb(e.__traceback__))
     print('complete')

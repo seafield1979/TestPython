@@ -24,8 +24,13 @@ def test02():
         print(number_bin2)
         print(int.from_bytes(number_bin2, 'big', signed=True))
 
+def test03():
+    data = bytes(range(65,72))
+    for b in data:
+        print(b)
 
 test01()
 test02()
+test03()
 
 print('complete')
