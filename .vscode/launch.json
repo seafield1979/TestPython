@@ -11,8 +11,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "./resource/tengai2.txt",
-                "arg2"
+                // "./resource/tengai2.txt",
+                // "arg2"
             ]
         }
     ]
