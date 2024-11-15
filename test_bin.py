@@ -13,6 +13,7 @@ def test01():
         fw.write(bin1)
         fw.write(bin2)
 
+
 # バイナリファイルを読み込む
 def test02():
     print('test02')
@@ -23,16 +24,23 @@ def test02():
         number_bin2 = fr.read(8)
         print(number_bin2)
         print(int.from_bytes(number_bin2, 'big', signed=True))
+        
 
 # バイナリデータを生成
 def test03():
-    data = bytes(range(65,72))
+    data = bytes(range(65,72))  # bytes[65, 66, 67, 68, 69, 70, 71])
     for b in data:
         print(b)
+    data2 = data[3:]
+    print(data2)
+    data3 = data[:3]
+    print(data3)
+
 
 # バイナリファイルを直接編集
-def test04():
-    with open('./resource/test1.bin', 'rwb') as fr:
+# def test04():
+#     with open('./resource/test1.bin', 'rwb') as fr:
+
 
 test01()
 test02()

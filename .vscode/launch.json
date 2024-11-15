@@ -9,11 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
-            "args": [
-                // "./resource/tengai2.txt",
-                // "arg2"
-            ]
+            "console": "integratedTerminal"
         }
     ]
 }

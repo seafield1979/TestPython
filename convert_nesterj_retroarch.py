@@ -38,24 +38,36 @@ class CHT:
         fr.seek(file_addr)
         bin_comment = fr.read(32)
 
+        # コメントは32Byteだが最後の2Byteの1Byte目だけが残っていた場合にデコードエラーになるため
+        # 30Byte分だけ出力
+        bin_comment = bin_comment[:30]
+        
         # bin_commentの\x00 以降に\x00以外が入るとデコードエラーになるため除去する
         flag1 = False
         bin_comment2 = bytearray()
         for b in bin_comment:
-            if b == 0:
-                if flag1 == False:
+            if flag1 == False:
+                if b == 0:
                     flag1 = True
-                else:
-                    break
+            if flag1 == True:
+               b = 0
             bin_comment2.append(b)
 
-        self.comment = bin_comment2.decode(encoding='sjis')
+        # ①などの機種依存文字がデコードエラーになるためその場合は固定文字列に置き換える
+        try:
+            self.comment = bin_comment2.decode(encoding='sjis')
+        except Exception as e:
+            self.comment = "不明なチート"
+        
         self.comment = self.comment.replace('\x00','')
 
         # addr
         fr.seek(file_addr + 0x24)
         bin_addr = fr.read(4)
         self.addr = int.from_bytes(bin_addr, 'little', signed=False)
+        # 10123 のような 5桁のアドレスは 6123のように4桁に変換する
+        if self.addr > 0xFFFF:
+            self.addr -= 0xA000
         
         # value
         fr.seek(file_addr + 0x28)
@@ -87,7 +99,7 @@ class CHT:
         bin_size = fr.read(1)
         self.size = int.from_bytes(bin_size, 'little', signed=False)
 
-        if self.code == 0 and self.addr <= 0xffff:
+        if self.code == 0:
             return (True, 55)
         else:
             return (False, (1+self.subcode_num) * 55)
@@ -144,9 +156,8 @@ def convert_cht_file(file_path):
             output += "cheat" + str(index) + "_enable = false" + "\r\n"
             index += 1
         
-        dirname1 = os.path.dirname(file_path)
-
         # 出力先のフォルダ作成
+        dirname1 = os.path.dirname(file_path)
         dirname2 = dirname1 + "/output"
         if not os.path.exists(dirname2):
             # ディレクトリが存在しない場合、ディレクトリを作成する
@@ -162,5 +173,5 @@ def convert_cht_file(file_path):
                 fw.write(output)
 
 if __name__ == "__main__": 
-    convert_cht_file('./nesterj_cht/うしおととら 深淵の大妖.cht')
-    print('complete')
+    convert_cht_file('./nesterj_cht/ドラゴンクエスト3 そして伝説へ….cht')
+    print('complete!!')

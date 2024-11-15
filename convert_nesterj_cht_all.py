@@ -18,7 +18,7 @@ def tree(path, layer=0, is_last=False, indent_current='　'):
     def is_last_path(i):
         return i == len(paths)-1
 
-    # 再帰的に表示
+    # 直下のみ処理
     for i, p in enumerate(paths):
 
         indent_lower = indent_current
@@ -35,9 +35,9 @@ def tree(path, layer=0, is_last=False, indent_current='　'):
                     print(traceback.format_exception(t,v,tb))
                     print(traceback.format_tb(e.__traceback__))
                 
-        if os.path.isdir(p):
-            tree(p, layer=layer+1, is_last=is_last_path(i), indent_current=indent_lower)
+        # if os.path.isdir(p):
+        #     tree(p, layer=layer+1, is_last=is_last_path(i), indent_current=indent_lower)
 
 
 
-tree("./")
+tree("./nesterj_cht_all/")

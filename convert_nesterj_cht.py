@@ -37,25 +37,37 @@ class CHT:
         # comment
         fr.seek(file_addr)
         bin_comment = fr.read(32)
+        
+        # コメントは32Byteだが最後の2Byteの1Byte目だけが残っていた場合にデコードエラーになるため
+        # 30Byte分だけ出力
+        bin_comment = bin_comment[:30]
 
         # bin_commentの\x00 以降に\x00以外が入るとデコードエラーになるため除去する
         flag1 = False
         bin_comment2 = bytearray()
         for b in bin_comment:
-            if b == 0:
-                if flag1 == False:
+            if flag1 == False:
+                if b == 0:
                     flag1 = True
-                else:
-                    break
+            if flag1 == True:
+               b = 0
             bin_comment2.append(b)
 
-        self.comment = bin_comment2.decode(encoding='sjis')
+        # ①などの機種依存文字がデコードエラーになるためその場合は固定文字列に置き換える
+        try:
+            self.comment = bin_comment2.decode(encoding='sjis')
+        except Exception as e:
+            self.comment = "不明なチート"
+
         self.comment = self.comment.replace('\x00','')
 
         # addr
         fr.seek(file_addr + 0x24)
         bin_addr = fr.read(4)
         self.addr = int.from_bytes(bin_addr, 'little', signed=False)
+        # 10123 のような 5桁のアドレスは 6123のように4桁に変換する
+        if self.addr > 0xFFFF:
+            self.addr -= 0xA000
         
         # value
         fr.seek(file_addr + 0x28)
@@ -87,7 +99,7 @@ class CHT:
         bin_size = fr.read(1)
         self.size = int.from_bytes(bin_size, 'little', signed=False)
 
-        if self.code == 0 and self.addr <= 0xffff:
+        if self.code == 0:
             return (True, 55)
         else:
             return (False, (1+self.subcode_num) * 55)
@@ -141,17 +153,25 @@ def convert_cht_file(file_path):
             line = line.replace('\\\\','\\')
             output += line + '\n'
 
+        # 出力先のフォルダ作成
+        dirname1 = os.path.dirname(file_path)
+        dirname2 = dirname1 + "/json"
+        if not os.path.exists(dirname2):
+            # ディレクトリが存在しない場合、ディレクトリを作成する
+            os.makedirs(dirname2)
+
         # ファイルパスから拡張子部分を分離
         # ./resource/tengai2.txt -> [0]: "./resource/tengai2", [1]: ".txt"
         file_path_split = os.path.splitext(file_path)
+        filename =  os.path.splitext(os.path.basename(file_path))[0]
         if len(file_path_split) >= 2:
-            file_output = file_path_split[0] + ".json"
+            file_output = dirname2 + "/" + filename + ".json"
             with open(file_output, 'w') as fw:
                 fw.write(output)
 
 if __name__ == "__main__": 
     try:
-        convert_cht_file('./nesterj_cht/うしおととら 深淵の大妖.cht')
+        convert_cht_file('./nesterj_cht/ファイナルファンタジー2.cht')
     # except UnicodeDecodeError as e :
     #     print('Unicodeに出コードできませんでした:')
         
