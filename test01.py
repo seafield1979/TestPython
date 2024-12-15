@@ -16,6 +16,12 @@ def func2():
     num2 = 100
     print("{:04X}{:08X}".format(num1, num2))
 
+def func_format():
+    number1 = 0x112233
+    print(f"{number1:08X}")
+    print("{:08X}".format(0x112233))    # 00112233
+
+
 def func_list():
     list1 = []
     list1.append("aaa")
@@ -26,7 +32,7 @@ def func_list():
     for str1 in list1:
         print(str1)
 
-func2()
+func_format()
 # print('hello world')
 # a=1
 # b="str1"

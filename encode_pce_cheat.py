@@ -61,7 +61,7 @@ file_path = "./resource/tengai2.txt"
 if len(sys.argv) >= 2:
     file_path = sys.argv[1]
 else:
-    print("no input json file")
+    print("no input txt file")
     sys.exit(0)
 
 cheats = main(file_path)

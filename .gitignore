@@ -1,0 +1,8 @@
+*.cht
+*.json
+*.pyc
+*.bin
+resource/*
+nesterj_cht/*
+magic_engine/*
+genesis/*

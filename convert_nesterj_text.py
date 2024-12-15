@@ -118,13 +118,17 @@ class CHT:
         output['Codes'] = code_str
         code_json.append(copy.copy(output))
 
-def convert_cht_file(file_path, mode = 0):
+def convert_cht_file(file_path, fw):
     root_ext_pair = os.path.splitext(file_path)
     if len(root_ext_pair) >= 2:
         if root_ext_pair[1] != '.cht':
             print("file extension isn't 'cht'")
             return
-
+    
+    # basename1: 拡張子なしのファイル名
+    file_path_split = os.path.splitext(file_path)
+    basename1 =  os.path.splitext(os.path.basename(file_path))[0]
+    
     with open(file_path, 'rb') as fr:
         # ヘッダー部分
         fr.seek(4)
@@ -143,35 +147,28 @@ def convert_cht_file(file_path, mode = 0):
         # cht用のデータを作成
         code_cht = []
         index = 0
-        output = "cheats = " + str(len(code_list)) + "\r\n"
+        output = basename1
+
         for code in code_list:
-            output += "cheat" + str(index) + "_desc = " + '"' + code.comment + '"' + "\r\n"
             code_str = ""
             for i in range(code.size):
                 if i > 0:
                     code_str += '+'
                 value1 = code.value >> (8 * i) & 0xff
                 code_str += "{:04X}:{:02X}".format(code.addr + i, value1 )
-            output += "cheat" + str(index) + "_code = " + '"' + code_str + '"' + "\r\n"
-            output += "cheat" + str(index) + "_enable = false" + "\r\n"
+            output += "\t" + code.comment + "\t" + code_str + "\r\n"
             index += 1
         
         # 出力先のフォルダ作成
         dirname1 = os.path.dirname(file_path)
-        dirname2 = dirname1 + "/output"
-        if not os.path.exists(dirname2):
+        if not os.path.exists(dirname1):
             # ディレクトリが存在しない場合、ディレクトリを作成する
-            os.makedirs(dirname2)
+            os.makedirs(dirname1)
 
-        # ファイルパスから拡張子部分を分離
-        # ./resource/tengai2.txt -> [0]: "./resource/tengai2", [1]: ".txt"
-        file_path_split = os.path.splitext(file_path)
-        filename =  os.path.splitext(os.path.basename(file_path))[0]
-        if len(file_path_split) >= 2:
-            file_output = dirname2 + "/" + filename + ".cht"
-            with open(file_output, 'w') as fw:
-                fw.write(output)
+        fw.write(output)
+        fw.write("\r\n")
 
-if __name__ == "__main__": 
-    convert_cht_file('./nesterj_cht/クレオパトラの魔宝.cht')
-    print('complete!!')
+if __name__ == "__main__":
+    with open('./nesterj_cht/cheats.txt', 'w') as fw:
+        convert_cht_file('./nesterj_cht/ドラゴンクエスト3 そして伝説へ….cht', fw)
+        print('complete!!')
